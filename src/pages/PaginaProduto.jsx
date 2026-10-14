@@ -1,10 +1,28 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { formatarPreco } from '../utils/formatarPreco'
 
+const CHAVE_ALERTAS = 'techstore-alertas'
+
+function lerAlertas() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_ALERTAS) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function salvarAlertas(alertas) {
+  localStorage.setItem(CHAVE_ALERTAS, JSON.stringify(alertas))
+}
+
 export default function PaginaProduto({ produtos, onAdicionar }) {
   const { id } = useParams()
   const produto = produtos.find((item) => item.id === id)
+  const [nome, setNome] = useState('')
+  const [email, setEmail] = useState('')
+  const [mensagem, setMensagem] = useState('')
 
   if (!produto) {
     return (
@@ -19,6 +37,40 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
 
   const precoDisponivel = Number.isFinite(Number(produto.price))
   const podeAdicionar = produto.estoque > 0 && precoDisponivel
+
+  function registrarInteresse(evento) {
+    evento.preventDefault()
+
+    const emailLimpo = email.trim()
+    const nomeLimpo = nome.trim()
+
+    if (!nomeLimpo || !emailLimpo) {
+      setMensagem('Preencha nome e e-mail para receber o aviso.')
+      return
+    }
+
+    if (!emailLimpo.toLowerCase().endsWith('@gmail.com')) {
+      setMensagem('Use um e-mail do Gmail para entrar na lista de espera.')
+      return
+    }
+
+    const alertas = lerAlertas()
+    const listaAtual = Array.isArray(alertas[produto.id]) ? alertas[produto.id] : []
+    const jaCadastrado = listaAtual.some(
+      (item) => item.email.toLowerCase() === emailLimpo.toLowerCase()
+    )
+
+    if (jaCadastrado) {
+      setMensagem('Você já está na lista de espera para este produto.')
+      return
+    }
+
+    alertas[produto.id] = [...listaAtual, { nome: nomeLimpo, email: emailLimpo }]
+    salvarAlertas(alertas)
+    setMensagem('Você foi adicionado à lista de espera.')
+    setNome('')
+    setEmail('')
+  }
 
   const relacionados = produtos
     .filter((item) => item.category === produto.category && item.id !== produto.id)
@@ -48,13 +100,35 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
           <p className="detalhe-descricao">{produto.description}</p>
           <p className="detalhe-estoque">{produto.estoque} unidades disponíveis</p>
 
-          <button
-            className="botao botao-grande"
-            onClick={() => onAdicionar(produto)}
-            disabled={!podeAdicionar}
-          >
-            {precoDisponivel ? 'Adicionar ao carrinho' : 'Indisponível'}
-          </button>
+          {produto.estoque === 0 ? (
+            <form onSubmit={registrarInteresse}>
+              <p className="aviso">Produto esgotado. Deixe seu nome e e-mail para receber aviso.</p>
+              <input
+                type="text"
+                value={nome}
+                onChange={(evento) => setNome(evento.target.value)}
+                placeholder="Seu nome"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(evento) => setEmail(evento.target.value)}
+                placeholder="Seu e-mail"
+              />
+              <button type="submit" className="botao botao-grande">
+                Avise-me quando voltar
+              </button>
+              {mensagem && <p>{mensagem}</p>}
+            </form>
+          ) : (
+            <button
+              className="botao botao-grande"
+              onClick={() => onAdicionar(produto)}
+              disabled={!podeAdicionar}
+            >
+              {precoDisponivel ? 'Adicionar ao carrinho' : 'Indisponível'}
+            </button>
+          )}
 
           <ul className="detalhe-garantias">
             <li>Troca grátis em até 30 dias</li>
