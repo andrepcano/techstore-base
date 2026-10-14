@@ -8,6 +8,12 @@ export function calcularTotal(carrinho = []) {
   }, 0)
 }
 
+export function calcularValorParaFreteGratis(valorTotal = 0) {
+  const total = Number(valorTotal)
+  if (!Number.isFinite(total)) return 0
+  return Math.max(0, 200 - total)
+}
+
 export function agruparItens(carrinho) {
   const itens = []
   carrinho.forEach((produto) => {

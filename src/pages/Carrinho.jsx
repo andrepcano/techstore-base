@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import SugestaoItem from '../components/SugestaoItem'
-import { agruparItens, calcularTotal } from '../utils/carrinho'
+import { agruparItens, calcularTotal, calcularValorParaFreteGratis } from '../utils/carrinho'
 import { validarCupom } from '../utils/cupons'
 import { formatarPreco } from '../utils/formatarPreco'
 
@@ -13,6 +13,8 @@ export default function Carrinho({ carrinho, produtos, clienteAtual, onAdicionar
   const itens = agruparItens(carrinho)
   const total = calcularTotal(carrinho)
   const totalComDesconto = cupomAplicado ? total * (1 - cupomAplicado.desconto) : total
+  const valorParaFreteGratis = calcularValorParaFreteGratis(totalComDesconto)
+  const percentualFrete = Math.min(100, Math.max(0, ((200 - valorParaFreteGratis) / 200) * 100))
 
   const sugestoes = produtos
     .filter((produto) => !carrinho.find((item) => item.id === produto.id))
@@ -93,6 +95,20 @@ export default function Carrinho({ carrinho, produtos, clienteAtual, onAdicionar
               <span>{cupomAplicado.desconto * 100}%</span>
             </p>
           )}
+
+          <div className="frete-progress">
+            <div className="frete-progress-header">
+              <span>{valorParaFreteGratis === 0 ? 'Frete grátis' : 'Falta para frete grátis'}</span>
+              {valorParaFreteGratis > 0 && <strong>{formatarPreco(valorParaFreteGratis)}</strong>}
+            </div>
+            <div className="frete-progress-barra" aria-label="Progresso para frete grátis">
+              <span
+                className={valorParaFreteGratis === 0 ? 'frete-progress-preenchimento frete-progress-preenchimento-completo' : 'frete-progress-preenchimento'}
+                style={{ width: `${percentualFrete}%` }}
+              />
+            </div>
+          </div>
+
           <p className="total">
             <span>Total</span>
             <span>{formatarPreco(totalComDesconto)}</span>

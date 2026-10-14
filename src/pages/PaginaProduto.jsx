@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
+import ProdutoCard from '../components/ProdutoCard'
 import { formatarPreco } from '../utils/formatarPreco'
 
 const CHAVE_ALERTAS = 'techstore-alertas'
@@ -15,6 +16,10 @@ function lerAlertas() {
 
 function salvarAlertas(alertas) {
   localStorage.setItem(CHAVE_ALERTAS, JSON.stringify(alertas))
+}
+
+function eEmailGmailValido(email) {
+  return typeof email === 'string' && email.trim().toLowerCase().endsWith('@gmail.com')
 }
 
 export default function PaginaProduto({ produtos, onAdicionar }) {
@@ -49,13 +54,13 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
       return
     }
 
-    if (!emailLimpo.toLowerCase().endsWith('@gmail.com')) {
+    if (!eEmailGmailValido(emailLimpo)) {
       setMensagem('Use um e-mail do Gmail para entrar na lista de espera.')
       return
     }
 
     const alertas = lerAlertas()
-    const listaAtual = Array.isArray(alertas[produto.id]) ? alertas[produto.id] : []
+    const listaAtual = Array.isArray(alertas[produto.id]) ? alertas[produto.id].filter((item) => eEmailGmailValido(item.email)) : []
     const jaCadastrado = listaAtual.some(
       (item) => item.email.toLowerCase() === emailLimpo.toLowerCase()
     )
@@ -139,27 +144,9 @@ export default function PaginaProduto({ produtos, onAdicionar }) {
 
       <h2>Produtos relacionados</h2>
       <div className="grade">
-        {relacionados.map((item) => {
-          const itemPrecoDisponivel = Number.isFinite(Number(item.price))
-          const itemPodeAdicionar = item.estoque > 0 && itemPrecoDisponivel
-
-          return (
-            <article key={item.id} className="card">
-              <Link to={`/produto/${item.id}`} className="card-link">
-                <div className="card-imagem-moldura">
-                  <img src={item.image} alt={item.title} className="card-imagem" />
-                </div>
-                <h3 className="card-titulo">{item.title}</h3>
-              </Link>
-              <p className="preco">
-                {itemPrecoDisponivel ? formatarPreco(item.price) : 'Preço indisponível'}
-              </p>
-              <button className="botao" onClick={() => onAdicionar(item)} disabled={!itemPodeAdicionar}>
-                {itemPrecoDisponivel ? 'Adicionar ao carrinho' : 'Indisponível'}
-              </button>
-            </article>
-          )
-        })}
+        {relacionados.map((item) => (
+          <ProdutoCard key={item.id} produto={item} onAdicionar={onAdicionar} />
+        ))}
       </div>
     </section>
   )

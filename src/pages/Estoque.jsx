@@ -8,6 +8,10 @@ function lerAlertas() {
   }
 }
 
+function eEmailGmailValido(email) {
+  return typeof email === 'string' && email.trim().toLowerCase().endsWith('@gmail.com')
+}
+
 // Página usada pelo time de estoque para acompanhar a quantidade de cada produto
 export default function Estoque({ produtos }) {
   // slice cria uma cópia, para o sort não alterar a lista original
@@ -33,7 +37,9 @@ export default function Estoque({ produtos }) {
           </thead>
           <tbody>
             {ordenados.map((produto) => {
-              const listaEspera = Array.isArray(alertas[produto.id]) ? alertas[produto.id] : []
+              const listaEspera = Array.isArray(alertas[produto.id])
+                ? alertas[produto.id].filter((item) => eEmailGmailValido(item.email))
+                : []
 
               return (
                 <tr key={produto.id}>
